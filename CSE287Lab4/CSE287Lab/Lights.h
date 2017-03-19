@@ -50,8 +50,8 @@ struct PositionalLight : public LightSource
 
 	virtual color illuminate(const glm::vec3 & eyeVector, HitRecord & closestHit, const std::vector<std::shared_ptr<Surface>> & surfaces)
 	{
-		HitRecord h = findIntersection(closestHit.interceptPoint + EPSILON*closestHit.surfaceNormal, lightPosition - closestHit.interceptPoint, surfaces);
-		if (h.t < FLT_MAX) {
+		HitRecord h = findIntersection(closestHit.interceptPoint + EPSILON*closestHit.surfaceNormal, glm::normalize(lightPosition - closestHit.interceptPoint), surfaces);
+		if (h.t < FLT_MAX && glm::dot(h.interceptPoint - lightPosition, h.interceptPoint - closestHit.interceptPoint) < 0) {
 			return color(0.0f, 0.0f, 0.0f, 1.0f);
 		}
 		glm::vec3 l = glm::normalize(lightPosition - closestHit.interceptPoint);
@@ -83,14 +83,14 @@ struct DirectionalLight : public LightSource
 
 	virtual color illuminate(const glm::vec3 & eyeVector, HitRecord & closestHit, const std::vector<std::shared_ptr<Surface>> & surfaces)
 	{
-		HitRecord h = findIntersection(closestHit.interceptPoint + EPSILON*closestHit.surfaceNormal, lightDirection, surfaces);
-		if (h.t < FLT_MAX) {
+		HitRecord h = findIntersection(closestHit.interceptPoint + EPSILON*closestHit.surfaceNormal, -lightDirection, surfaces);
+		if (h.t < FLT_MAX && glm::dot(lightDirection, h.interceptPoint - closestHit.interceptPoint) < 0) {
 			return color(0.0f, 0.0f, 0.0f, 1.0f);
 		}
 		glm::vec3 v = glm::normalize(eyeVector - closestHit.interceptPoint);
-		glm::vec3 r = glm::normalize(lightDirection - 2 * glm::dot(lightDirection, closestHit.surfaceNormal)*closestHit.surfaceNormal);
+		glm::vec3 r = glm::normalize(lightDirection - 2 * glm::dot(-lightDirection, closestHit.surfaceNormal)*closestHit.surfaceNormal);
 
-		color diffuse = glm::max(0.0f, glm::dot(closestHit.surfaceNormal, lightDirection)) * lightColor * closestHit.material.diffuseColor;		
+		color diffuse = glm::max(0.0f, glm::dot(closestHit.surfaceNormal, -lightDirection)) * lightColor * closestHit.material.diffuseColor;		
 		color specular = glm::pow(glm::max(0.0f, glm::dot(r, v)), closestHit.material.shininess) * lightColor * closestHit.material.specularColor;
 		return diffuse + specular;
 	}

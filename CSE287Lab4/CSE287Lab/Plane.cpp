@@ -28,17 +28,21 @@ Plane::~Plane(void)
 */
 HitRecord Plane::findClosestIntersection(const glm::vec3 &rayOrigin, const glm::vec3 &rayDirection)
 {
+
 	HitRecord hitRecord;
+	glm::vec3 nor = n;
 
 	// TODO
-	if (dot(n, rayDirection) > 0)
-		n = -n;
-	float discriminant = glm::dot(rayDirection, n);
+	if (dot(nor, rayDirection) > 0) {
+		nor = -nor;
+	}
+	hitRecord.surfaceNormal = nor;
+	float discriminant = glm::dot(rayDirection, nor);
 	if (discriminant == 0) {
 		hitRecord.t = FLT_MAX;
 	}
 	else {
-		hitRecord.t = glm::dot((a - rayOrigin), n) / discriminant;
+		hitRecord.t = glm::dot((a - rayOrigin), nor) / discriminant;
 
 		if (hitRecord.t < 0)
 			hitRecord.t = FLT_MAX;
@@ -46,7 +50,6 @@ HitRecord Plane::findClosestIntersection(const glm::vec3 &rayOrigin, const glm::
 		hitRecord.interceptPoint = rayOrigin + hitRecord.t * rayDirection;
 		hitRecord.material = material;
 		
-		hitRecord.surfaceNormal = n;
 	}
 
 	return hitRecord;

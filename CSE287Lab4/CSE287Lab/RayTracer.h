@@ -32,6 +32,10 @@ class RayTracer
 	*/
 	void raytraceScene(const std::vector<std::shared_ptr<Surface>> & surfaces, const std::vector<std::shared_ptr<LightSource>> & lights);
 
+	void raytraceScene1(const std::vector<std::shared_ptr<Surface>>& surfaces, const std::vector<std::shared_ptr<LightSource>>& lights);
+
+	void raytraceScene2(const std::vector<std::shared_ptr<Surface>>& surfaces, const std::vector<std::shared_ptr<LightSource>>& lights);
+
 	/**
 	* Sets the w, u, and v orthonormal basis vectors associated with the coordinate
 	* frame that is tied to the viewing position and the eye data member of the
@@ -65,6 +69,8 @@ class RayTracer
 	* @param default - color for pixels for which no ray-object intersections occur.
 	*/
 	void setDefaultColor(color default) { this->defaultColor = default; };
+
+	bool isPerspectiveView();
 
 	int recursionDepth;
 

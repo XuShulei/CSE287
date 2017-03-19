@@ -31,6 +31,7 @@ HitRecord CylinderAlongX::findClosestIntersection(const glm::vec3 & rayOrigin, c
 	float d = glm::length(hit.interceptPoint - center);
 	if (glm::pow(d, 2) - glm::pow(radius, 2) > glm::pow(length / 2, 2)) {
 		hit = QuadricSurface::findClosestIntersection(hit.interceptPoint + 0.001f * rayDirection, rayDirection);
+		hit.t = glm::length(hit.interceptPoint - rayOrigin);
 		d = glm::length(hit.interceptPoint - center);
 		if (glm::pow(d, 2) - glm::pow(radius, 2) > glm::pow(length / 2, 2))
 			hit.t = FLT_MAX;

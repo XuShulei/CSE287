@@ -42,6 +42,27 @@ static void RenderSceneCB()
 
 } // end RenderSceneCB
 
+static void RenderSceneCB1()
+{
+	// Get time before rendering the scene
+	int frameStartTime = glutGet(GLUT_ELAPSED_TIME);
+
+	// Clear the color buffer
+	//	frameBuffer.clearColorAndDepthBuffers( ); // Not necessary for ray tracing
+
+	// Ray trace the scene to determine the color of all the pixels in the scene
+	rayTrace.raytraceScene1(surfaces, lights);
+
+	// Display the color buffer
+	frameBuffer.showColorBuffer();
+
+	int frameEndTime = glutGet(GLUT_ELAPSED_TIME); // Get end time
+
+												   // Calculate and display time to render the scene
+	float totalTimeSec = (frameEndTime - frameStartTime) / 1000.0f;
+	std::cout << "Render time: " << totalTimeSec << " sec." << std::endl;
+
+}
 
 // Reset viewport limits for full window rendering each time the window is resized.
 // This function is called when the program starts up and each time the window is 
@@ -86,6 +107,19 @@ static void KeyboardCB(unsigned char key, int x, int y)
 		break;
 	case('b'): case('B'):
 		rayTrace.setCameraFrame(glm::vec3(0, 0, -20), glm::vec3(0, 0, 1), glm::vec3(0, 1, 0));
+		break;
+	case('p'): case('P'):
+		if (rayTrace.isPerspectiveView()) {
+			rayTrace.calculateOrthographicViewingParameters(10.0f);
+			glutDisplayFunc(RenderSceneCB1);
+		}
+		else {
+			rayTrace.calculatePerspectiveViewingParameters(45.0f);
+			glutDisplayFunc(RenderSceneCB);
+		}
+		break;
+	case('i'): case('I'):
+		rayTrace.raytraceScene2(surfaces, lights);
 		break;
 	case(27): // Escape key
 		glutLeaveMainLoop();
@@ -160,16 +194,17 @@ void buildScene()
 	// Create objects in the scene
 	std::shared_ptr<Sphere> redBall = std::make_shared<Sphere>(glm::vec3(-1.0f, 0.0f, -10.0f), 0.8f, color(0.8f, 0.3f, 0.3f, 1.0f));
 	std::shared_ptr<Sphere> blueBall = std::make_shared<Sphere>(glm::vec3(1.0f, 0.0f, -8.0f), 0.8f, color(0.1f, 0.1f, 0.8f, 1.0f));
-	std::shared_ptr<Plane> plane1 = std::make_shared<Plane>(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), color(0.1f, 0.2f, 0.1f, 1.0f));
-	std::shared_ptr<Plane> plane2 = std::make_shared<Plane>(glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), color(0.5f, 0.5f, 0.5f, 1.0f));
-	std::shared_ptr<CylinderAlongX> cyl = std::make_shared<CylinderAlongX>(glm::vec3(2.0f, 1.0f, -4.0f), 0.6f, 0.6f, color(0.2f, 0.2f, 0.6f, 1.0f));
+	std::shared_ptr<Plane> plane1 = std::make_shared<Plane>(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f), color(0.4f, 0.5f, 0.4f, 1.0f));
+	std::shared_ptr<Plane> plane2 = std::make_shared<Plane>(glm::vec3(0.0f, 6.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), color(0.5f, 0.0f, 0.0f, 1.0f));
+//	std::shared_ptr<Plane> plane3 = std::make_shared<Plane>(glm::vec3(0.0f, 0.0f, -12.0f), glm::vec3(0.0f, 0.0f, 1.0f), color(0.5f, 0.4f, 0.5f, 1.0f));
+	std::shared_ptr<CylinderAlongX> cyl = std::make_shared<CylinderAlongX>(glm::vec3(1.5f, 1.0f, -4.0f), 0.6f, 1.2f, color(0.2f, 0.2f, 0.6f, 1.0f));
 
 	// Create a polygon
 	std::vector<glm::vec3> polyCorners;
-	polyCorners.push_back(glm::vec3(glm::vec3(-1, -0.8, -4)));
-	polyCorners.push_back(glm::vec3(glm::vec3(-1, 0.2, -4)));
-	polyCorners.push_back(glm::vec3(glm::vec3(-1, 0.2, -2)));
-	polyCorners.push_back(glm::vec3(glm::vec3(-1, -0.8, -2)));
+	polyCorners.push_back(glm::vec3(glm::vec3(1, -0.8, -4)));
+	polyCorners.push_back(glm::vec3(glm::vec3(1, 0.2, -4)));
+	polyCorners.push_back(glm::vec3(glm::vec3(1, 0.2, -2)));
+	polyCorners.push_back(glm::vec3(glm::vec3(1, -0.8, -2)));
 	std::shared_ptr<Polygon1> poly = std::make_shared<Polygon1>(polyCorners, color(0.4f,0.1f,0.4f,1.0f));
 
 	// Add objects to vector of objects in the scene
@@ -177,13 +212,14 @@ void buildScene()
 	surfaces.push_back(blueBall);
 	surfaces.push_back(plane1);
 	surfaces.push_back(plane2);
+//	surfaces.push_back(plane3);
 	surfaces.push_back(poly);
 	surfaces.push_back(cyl);
 
 	// Create light sources
 	std::shared_ptr<LightSource> ambientLight = std::make_shared<LightSource>(color(0.15, 0.15, 0.15, 1.0));
-	std::shared_ptr<PositionalLight> lightPos = std::make_shared<PositionalLight>(glm::vec3(5, 5, 4), glm::vec4(.75, .75, .75, 1));
-	std::shared_ptr<DirectionalLight> lightDir = std::make_shared<DirectionalLight>(glm::vec3(0, 0, -1), glm::vec4(.75, .75, .75, 1));
+	std::shared_ptr<PositionalLight> lightPos = std::make_shared<PositionalLight>(glm::vec3(-10, 5, 0), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	std::shared_ptr<DirectionalLight> lightDir = std::make_shared<DirectionalLight>(glm::vec3(0, -1, 0), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	// Add light sources to vector of light sources
 	lights.push_back(lightPos);
@@ -205,7 +241,7 @@ static void animate()
 int main(int argc, char** argv)
 {
 	// freeGlut and Window initialization ***********************
-	rayTrace.setDefaultColor(color(0.0f,0.0f,0.0f,1.0f));
+	rayTrace.setDefaultColor(color(0.5f,0.5f,0.6f,1.0f));
 
     // Pass any applicable command line arguments to GLUT. These arguments
 	// are platform dependent.

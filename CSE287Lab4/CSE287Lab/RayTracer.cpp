@@ -42,6 +42,11 @@ void RayTracer::calculatePerspectiveViewingParameters(const float verticalFieldO
 
 } // end calculatePerspectiveViewingParameters
 
+bool RayTracer::isPerspectiveView()
+{
+	return distToPlane != 0;
+}
+
 
 void RayTracer::calculateOrthographicViewingParameters(const float viewPlaneHeight)
 {
@@ -120,6 +125,45 @@ void RayTracer::raytraceScene(const std::vector<std::shared_ptr<Surface>> & surf
 
 } // end raytraceScene
 
+void RayTracer::raytraceScene1(const std::vector<std::shared_ptr<Surface>> & surfaces, const std::vector<std::shared_ptr<LightSource>> & lights)
+{
+	this->surfacesInScene = surfaces;
+	this->lightsInScene = lights;
+
+	for (unsigned int i = 0; i < colorBuffer.getWindowWidth(); i++) {
+		for (unsigned int j = 0; j < colorBuffer.getWindowHeight(); j++) {
+			setOrthoRayOriginAndDirection(i, j);
+			color cl = traceIndividualRay(rayOrigin, rayDirection, recursionDepth);
+			colorBuffer.setPixel(i, j, cl);
+		}
+	}
+
+} // end raytraceScene
+
+void RayTracer::raytraceScene2(const std::vector<std::shared_ptr<Surface>> & surfaces, const std::vector<std::shared_ptr<LightSource>> & lights)
+{
+	this->surfacesInScene = surfaces;
+	this->lightsInScene = lights;
+
+	// Iterate through each and every pixel in the rendering window
+	// TODO
+	for (unsigned int i = 0; i < colorBuffer.getWindowWidth(); i++) {
+		for (unsigned int j = 0; j < colorBuffer.getWindowHeight(); j++) {
+			for (unsigned int m = 0; m < 3; m++) {
+				color cl;
+				for (unsigned int m = 0; m < 3; m++) {
+					setPerspectiveRayOriginAndDirection(i, j);
+					cl += traceIndividualRay(rayOrigin, rayDirection, recursionDepth);
+				}
+			}
+
+			setPerspectiveRayOriginAndDirection(i, j);
+			color cl = traceIndividualRay(rayOrigin, rayDirection, recursionDepth);
+			colorBuffer.setPixel(i, j, cl);
+		}
+	}
+
+}
 
 
 color RayTracer::traceIndividualRay(const glm::vec3 &e, const glm::vec3 &d, int recursionLevel)
@@ -127,23 +171,21 @@ color RayTracer::traceIndividualRay(const glm::vec3 &e, const glm::vec3 &d, int 
 	// Find surface intersection that is closest to 'e' in the direction 'd.'
 	// TODO
 	HitRecord hit = findIntersection(e, d, surfacesInScene);
-
-	color localLight = color(0.0f, 0.0f, 0.0f, 1.0f);
 	
 	if (recursionLevel > 0) {
 		if (hit.t != FLT_MAX) {
+			color localLight = color(0.0f, 0.0f, 0.0f, 1.0f);
 			for (unsigned int i = 0; i < lightsInScene.size(); i++) {
-				localLight += lightsInScene[i]->illuminate(-d, hit, surfacesInScene);
+				localLight += lightsInScene[i]->illuminate(e, hit, surfacesInScene);
 			}
-
+			localLight += hit.material.emissiveColor;
 			glm::vec3 rd = glm::reflect(d, hit.surfaceNormal);// glm::normalize(d - 2 * glm::dot(d, hit.surfaceNormal) * hit.surfaceNormal);
-			HitRecord hit1 = findIntersection(hit.interceptPoint, rd, surfacesInScene);
 			return 0.7f * localLight + 0.3f * traceIndividualRay(hit.interceptPoint + EPSILON * hit.surfaceNormal, rd, recursionLevel - 1);
 		}
-		return localLight;
+		return defaultColor;
 	}
-	else
-		return localLight;
+
+	return defaultColor;
 } // end traceRay
 
 
